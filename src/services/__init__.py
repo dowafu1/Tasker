@@ -62,7 +62,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered",
-                code="VALIDATION_ERROR",
+                
             )
         
         # Create user
@@ -84,7 +84,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password",
-                code="AUTH_ERROR",
+                
             )
         
         # Verify password
@@ -92,7 +92,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password",
-                code="AUTH_ERROR",
+                
             )
         
         # Check if user is active
@@ -100,7 +100,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Account is deactivated",
-                code="AUTH_ERROR",
+                
             )
         
         # Generate tokens
@@ -153,7 +153,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired code",
-                code="VALIDATION_ERROR",
+                
             )
         
         return {"detail": "Code verified successfully"}
@@ -168,7 +168,7 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found",
-                code="NOT_FOUND",
+                
             )
         
         # Update password
@@ -234,7 +234,7 @@ class ProfileService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already in use",
-                    code="VALIDATION_ERROR",
+                    
                 )
             update_data["email"] = data.email
         
@@ -254,7 +254,7 @@ class ProfileService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Current password is incorrect",
-                code="VALIDATION_ERROR",
+                
             )
         
         # Update password
@@ -291,7 +291,7 @@ class ProjectService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Project not found",
-                code="NOT_FOUND",
+                
             )
         
         # Check ownership
@@ -299,7 +299,7 @@ class ProjectService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied to this project",
-                code="AUTH_ERROR",
+                
             )
         
         return project
@@ -389,7 +389,7 @@ class TaskService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Task not found",
-                code="NOT_FOUND",
+                
             )
         
         # Check if user has access (either assignee or creator)
@@ -400,7 +400,7 @@ class TaskService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied to this task",
-                code="AUTH_ERROR",
+                
             )
         
         # Conditional logic: if task is assigned (user is assignee), 
@@ -426,7 +426,7 @@ class TaskService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Task not found",
-                code="NOT_FOUND",
+                
             )
         
         # Check if user is the assignee
@@ -434,7 +434,7 @@ class TaskService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only assignee can complete this task",
-                code="AUTH_ERROR",
+                
             )
         
         task.mark_completed()
@@ -462,7 +462,7 @@ class TaskService:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Category not found",
-                    code="NOT_FOUND",
+                    
                 )
         
         # Validate project if provided
@@ -472,7 +472,7 @@ class TaskService:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Project not found",
-                    code="NOT_FOUND",
+                    
                 )
         
         # Validate assignee if provided
@@ -482,7 +482,7 @@ class TaskService:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Assignee not found",
-                    code="NOT_FOUND",
+                    
                 )
         
         # Create task
@@ -556,7 +556,7 @@ class CalendarService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid date format. Use ISO format (YYYY-MM-DD)",
-                code="VALIDATION_ERROR",
+                
             )
         
         tasks = await self.task_repo.get_tasks_for_calendar_day(

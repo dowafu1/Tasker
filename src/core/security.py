@@ -191,10 +191,10 @@ async def get_current_user(
         )
     
     # Import here to avoid circular imports
-    from src.repositories.user_repository import UserRepository
-    from src.core.database import async_session_maker
+    from src.repositories import UserRepository
     
-    async with async_session_maker() as session:
+    # Use the session from the dependency override (for tests) or create new one
+    async for session in get_db():
         user_repo = UserRepository(session)
         user = await user_repo.get_by_id(int(user_id))
         
@@ -204,5 +204,6 @@ async def get_current_user(
                 detail="User not found",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        break
     
     return user

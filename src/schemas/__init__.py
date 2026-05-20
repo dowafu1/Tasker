@@ -18,7 +18,7 @@ import re
 # Validation patterns from TZ
 EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9\-_.]+@[A-Za-z0-9\-_.]+\.[A-Za-z]{2,}$")
 PASSWORD_PATTERN = re.compile(r"^[A-Za-z0-9!#$%&*+.<=>?@^_-]{8,16}$")
-NAME_PATTERN = re.compile(r"^[А-Яа-яA-Za-z\-]{1,50}$")
+NAME_PATTERN = re.compile(r"^[А-Яа-яA-Za-z\- ]{1,50}$")
 
 
 class ImportanceLevel(str, Enum):
