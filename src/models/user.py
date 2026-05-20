@@ -11,6 +11,7 @@ from sqlalchemy import (
     Enum as SQLEnum,
     Text,
     Integer,
+    Index,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -117,6 +118,10 @@ class User(Base):
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
+
+
+# Composite indexes for filtering
+Index("ix_users_email_is_active", "users", "email", "is_active")
 
 
 class RefreshToken(Base):
