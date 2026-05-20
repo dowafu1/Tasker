@@ -1,42 +1,162 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
-from pydantic import BaseModel
-import asyncio
-from .services.auth_service import AuthService
+"""Authentication router."""
 
-router = APIRouter()
+import logging
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+from src.core.database import AsyncSession, get_db
+from src.core.security import get_current_user
+from src.models.user import User
+from src.schemas import (
+    RegisterRequest,
+    LoginRequest,
+    TokenResponse,
+    ForgotPasswordRequest,
+    VerifyCodeRequest,
+    ResetPasswordRequest,
+    ErrorResponse,
+)
+from src.services import AuthService
 
-@router.post("/api/v1/auth/register", response_model=Token)
-async def register(request: Request, email: str = Form(...), password: str = Form(...), password_confirm: str = Form(...), accept_terms: bool = Form(...)):
-    auth_service = AuthService()
-    user = await auth_service.register_user(email, password, password_confirm, accept_terms)
-    access_token = create_access_token({"sub": str(user.id)})
-    return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/api/v1/auth/login", response_model=Token)
-async def login(request: Request, email: str = Form(...), password: str = Form(...)):
-    auth_service = AuthService()
-    user = await auth_service.login_user(email, password)
-    access_token = create_access_token({"sub": str(user.id)})
-    return {"access_token": access_token, "token_type": "bearer"}
+logger = logging.getLogger(__name__)
 
-@router.post("/api/v1/auth/logout", response_model=dict)
-async def logout(request: Request):
-    # Implement logout logic
-    pass
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, app_config.SECRET_KEY, algorithm=app_config.ALGORITHM)
-    return encoded_jwt
 
-class TokenData(BaseModel):
-    user_id: int
+@router.post(
+    "/register",
+    response_model=TokenResponse,
+    summary="Register new user",
+    description="Register a new user account with email and password.",
+    responses={
+        200: {"description": "Successfully registered"},
+        400: {"model": ErrorResponse, "description": "Validation error or email already exists"},
+    },
+)
+async def register(
+    request: RegisterRequest,
+    session: AsyncSession = Depends(get_db),
+):
+    """
+    Register a new user.
+    
+    - **email**: Valid email address
+    - **password**: 8-16 characters, allowed: A-Za-z0-9!#$%&*+.<=>?@^_-
+    - **password_confirm**: Must match password
+    - **accept_terms**: Must be true
+    """
+    auth_service = AuthService(session)
+    user, tokens = await auth_service.register(request)
+    return tokens
+
+
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="Login user",
+    description="Authenticate user and return JWT tokens.",
+    responses={
+        200: {"description": "Successfully logged in"},
+        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+    },
+)
+async def login(
+    request: LoginRequest,
+    session: AsyncSession = Depends(get_db),
+):
+    """
+    Login with email and password.
+    
+    Returns access token (15 min) and refresh token (7 days).
+    """
+    auth_service = AuthService(session)
+    user, tokens = await auth_service.login(request)
+    return tokens
+
+
+@router.post(
+    "/logout",
+    summary="Logout user",
+    description="Invalidate all refresh tokens for the current user.",
+    responses={
+        200: {"description": "Successfully logged out"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+    },
+)
+async def logout(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Logout the current user by revoking all refresh tokens.
+    """
+    auth_service = AuthService(session)
+    result = await auth_service.logout(current_user, "")
+    return result
+
+
+@router.post(
+    "/forgot-password",
+    summary="Request password reset",
+    description="Send a password reset code to the user's email.",
+    responses={
+        200: {"description": "Reset code sent (if email exists)"},
+    },
+)
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    session: AsyncSession = Depends(get_db),
+):
+    """
+    Request a password reset code.
+    
+    For security, always returns success even if email doesn't exist.
+    The code is logged for demo purposes (in production, it would be emailed).
+    """
+    auth_service = AuthService(session)
+    return await auth_service.forgot_password(request)
+
+
+@router.post(
+    "/verify-code",
+    summary="Verify password reset code",
+    description="Verify the password reset code sent to email.",
+    responses={
+        200: {"description": "Code verified successfully"},
+        400: {"model": ErrorResponse, "description": "Invalid or expired code"},
+    },
+)
+async def verify_code(
+    request: VerifyCodeRequest,
+    session: AsyncSession = Depends(get_db),
+):
+    """
+    Verify the password reset code.
+    """
+    auth_service = AuthService(session)
+    return await auth_service.verify_code(request)
+
+
+@router.post(
+    "/reset-password",
+    summary="Reset password",
+    description="Reset password after code verification.",
+    responses={
+        200: {"description": "Password reset successfully"},
+        400: {"model": ErrorResponse, "description": "Validation error"},
+        404: {"model": ErrorResponse, "description": "User not found"},
+    },
+)
+async def reset_password(
+    request: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_db),
+):
+    """
+    Reset password with new password.
+    
+    Should be called after verify-code endpoint returns success.
+    """
+    auth_service = AuthService(session)
+    return await auth_service.reset_password(request)
