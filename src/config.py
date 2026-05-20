@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings with environment variable support."""
     
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/task_manager"
+    DATABASE_URL: str = "postgresql+asyncpg://dowafu:postgres@localhost/tasker_db"
     
     # JWT Settings
     SECRET_KEY: str = "supersecretkey_change_in_production"

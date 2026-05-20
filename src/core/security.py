@@ -8,6 +8,8 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+from src.schemas.token import TokenData
+
 from src.config import settings
 from src.models.user import User
 
@@ -105,6 +107,24 @@ def create_refresh_token(
     )
     return encoded_jwt
 
+def verify_refresh_token(token: str) -> TokenData:
+    """Проверка refresh токена."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        token_type: str = payload.get("type")
+        
+        if email is None or token_type != "refresh":
+            raise credentials_exception
+            
+        return TokenData(email=email)
+    except JWTError:
+        raise credentials_exception
 
 def verify_token(token: str, token_type: str = "access") -> Optional[dict[str, Any]]:
     """

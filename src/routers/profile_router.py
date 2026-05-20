@@ -1,6 +1,7 @@
 """Profile router."""
 
-from fastapi import APIRouter, Depends, UploadFile, File, Optional
+from typing import Optional
+from fastapi import APIRouter, Depends, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from src.core.database import AsyncSession, get_db
