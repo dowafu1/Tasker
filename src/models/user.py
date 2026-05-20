@@ -35,8 +35,8 @@ if TYPE_CHECKING:
 EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9\-_.]+@[A-Za-z0-9\-_.]+\.[A-Za-z]{2,}$")
 # Password validation regex from TZ
 PASSWORD_PATTERN = re.compile(r"^[A-Za-z0-9!#$%&*+.<=>?@^_-]{8,16}$")
-# Name validation regex from TZ (Cyrillic + Latin + hyphen)
-NAME_PATTERN = re.compile(r"^[А-Яа-яA-Za-z\-]{1,50}$")
+# Name validation regex from TZ (Cyrillic + Latin + hyphen + space)
+NAME_PATTERN = re.compile(r"^[А-Яа-яA-Za-z\- ]{1,50}$")
 
 
 class User(Base):
