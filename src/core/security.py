@@ -7,6 +7,7 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.schemas.token import TokenData
 
@@ -115,7 +116,7 @@ def verify_refresh_token(token: str) -> TokenData:
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         token_type: str = payload.get("type")
         
@@ -150,14 +151,33 @@ def verify_token(token: str, token_type: str = "access") -> Optional[dict[str, A
         return None
 
 
+async def get_db_dependency() -> AsyncSession:
+    """
+    Database dependency that can be overridden in tests.
+    This is a wrapper around get_db to allow proper dependency injection.
+    """
+    from src.core.database import async_session_maker
+    async with async_session_maker() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    session: AsyncSession = Depends(get_db_dependency)
 ) -> User:
     """
     Get the current authenticated user from JWT token.
     
     Args:
         credentials: HTTP Bearer credentials.
+        session: Database session.
     
     Returns:
         User: The authenticated user.
@@ -193,17 +213,14 @@ async def get_current_user(
     # Import here to avoid circular imports
     from src.repositories import UserRepository
     
-    # Use the session from the dependency override (for tests) or create new one
-    async for session in get_db():
-        user_repo = UserRepository(session)
-        user = await user_repo.get_by_id(int(user_id))
-        
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        break
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_id(int(user_id))
+    
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     return user

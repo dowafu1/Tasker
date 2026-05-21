@@ -1,40 +1,36 @@
 ```
-# Compiled Python files
+# Compiled and build artifacts
 *.pyc
 __pycache__/
+*.pyo
+*.pyd
+*.so
+*.egg-info/
 
 # Dependencies
 .venv/
 venv/
-pip-log.txt
-pipenv.lock
-
-# Environment variables
 .env
 .env.local
 *.env.*
 
-# Logs
+# Logs and temp files
 *.log
+*.tmp
+*.swp
 
 # Coverage reports
 .coverage
 htmlcov/
-.coverage.*
-.cache
+coverage/
 
-# Testing
+# pytest cache
 .pytest_cache/
+
+# mypy cache
 .mypy_cache/
 
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# IDE
+# Editors
 .vscode/
 .idea/
 *.swp
@@ -43,14 +39,4 @@ build/
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# System files
-*.tmp
-*~
-```
-
-Wait, let me reconsider. The modified files are only source code files (.py) and there are no build artifacts, dependency directories, or temporary files in the changes shown. According to rule #6, if the changes contain only source or config files and no build artifacts, dependencies, or temp files, I should output an empty .gitignore.
-
-```
-
 ```

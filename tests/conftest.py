@@ -22,6 +22,7 @@ from src.models.user import User
 from src.models.task import Task, Category, TaskStatus, ImportanceLevel
 from src.models.project import Project
 from src.core.security import get_password_hash
+from src.repositories import UserRepository
 
 
 # Test database URL - using SQLite for simplicity in tests
@@ -78,7 +79,14 @@ async def client(test_session: AsyncSession) -> AsyncGenerator[AsyncClient, None
     async def override_get_db():
         yield test_session
     
+    async def override_get_db_dependency():
+        yield test_session
+    
+    from src.core.database import get_db
+    from src.core.security import get_db_dependency
+    
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_db_dependency] = override_get_db_dependency
     
     async with AsyncClient(
         transport=ASGITransport(app=app),
