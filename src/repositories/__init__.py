@@ -179,9 +179,9 @@ class PasswordResetCodeRepository(BaseRepository[PasswordResetCode]):
         """Create a new password reset code."""
         # Invalidate any existing codes for this email
         await self.session.execute(
-            select(PasswordResetCode)
+            __import__('sqlalchemy').update(PasswordResetCode)
             .where(PasswordResetCode.email == email.lower())
-            .update({"is_used": True})
+            .values(is_used=True)
         )
         
         reset_code = PasswordResetCode(
