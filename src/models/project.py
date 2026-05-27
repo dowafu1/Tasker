@@ -1,4 +1,4 @@
-"""Project model."""
+"""Модели для проекта"""
 
 from datetime import datetime, timezone
 from typing import Optional, List, TYPE_CHECKING
@@ -13,13 +13,10 @@ if TYPE_CHECKING:
     from .user import User
     from .task import Task
 
-
 class Project(Base):
-    """Project model for grouping tasks."""
     
     __tablename__ = "projects"
     
-    # Columns
     name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
@@ -27,7 +24,7 @@ class Project(Base):
     icon: Mapped[Optional[str]] = mapped_column(
         String(50),
         nullable=True,
-        default="📁",
+        default="?",
     )
     description: Mapped[Optional[str]] = mapped_column(
         Text,
@@ -50,7 +47,6 @@ class Project(Base):
         nullable=False,
     )
     
-    # Relationships
     owner: Mapped["User"] = relationship(
         "User",
         back_populates="projects",

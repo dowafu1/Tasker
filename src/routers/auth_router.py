@@ -1,4 +1,4 @@
-"""Authentication router."""
+"""Ручки аунтификации"""
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -27,25 +27,17 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 @router.post(
     "/register",
     response_model=TokenResponse,
-    summary="Register new user",
-    description="Register a new user account with email and password.",
+    summary="Регистрация нововго пользователя",
+    description="Регистрация нового пользователя с помошью почты и пароля ",
     responses={
-        200: {"description": "Successfully registered"},
-        400: {"model": ErrorResponse, "description": "Validation error or email already exists"},
+        200: {"description": "Успех"},
+        400: {"model": ErrorResponse, "description": "Ошибка валидации или почты"},
     },
 )
 async def register(
     request: RegisterRequest,
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    Register a new user.
-    
-    - **email**: Valid email address
-    - **password**: 8-16 characters, allowed: A-Za-z0-9!#$%&*+.<=>?@^_-
-    - **password_confirm**: Must match password
-    - **accept_terms**: Must be true
-    """
     auth_service = AuthService(session)
     user, tokens = await auth_service.register(request)
     return tokens
@@ -54,22 +46,17 @@ async def register(
 @router.post(
     "/login",
     response_model=TokenResponse,
-    summary="Login user",
-    description="Authenticate user and return JWT tokens.",
+    summary="Вход",
+    description="Аунтификация аккаунта и возварщение JWT токена",
     responses={
-        200: {"description": "Successfully logged in"},
-        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+        200: {"description": "Вход прошел успешно"},
+        401: {"model": ErrorResponse, "description": "Ошибка"},
     },
 )
 async def login(
     request: LoginRequest,
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    Login with email and password.
-    
-    Returns access token (15 min) and refresh token (7 days).
-    """
     auth_service = AuthService(session)
     user, tokens = await auth_service.login(request)
     return tokens
@@ -77,11 +64,11 @@ async def login(
 
 @router.post(
     "/logout",
-    summary="Logout user",
-    description="Invalidate all refresh tokens for the current user.",
+    summary="Выход из аккаунта",
+    description="Анулировать все рефреш токены для этого пользователя",
     responses={
-        200: {"description": "Successfully logged out"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Успешный выход"},
+        401: {"model": ErrorResponse, "description": "Ошибка выхода"},
     },
 )
 async def logout(
@@ -89,9 +76,6 @@ async def logout(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Logout the current user by revoking all refresh tokens.
-    """
     auth_service = AuthService(session)
     result = await auth_service.logout(current_user, "")
     return result
@@ -99,64 +83,50 @@ async def logout(
 
 @router.post(
     "/forgot-password",
-    summary="Request password reset",
-    description="Send a password reset code to the user's email.",
+    summary="Востановление пароля",
+    description="Отправка кода для востановления пароля на почту",
     responses={
-        200: {"description": "Reset code sent (if email exists)"},
+        200: {"description": "Код отправлен"},
     },
 )
 async def forgot_password(
     request: ForgotPasswordRequest,
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    Request a password reset code.
-    
-    For security, always returns success even if email doesn't exist.
-    The code is logged for demo purposes (in production, it would be emailed).
-    """
     auth_service = AuthService(session)
     return await auth_service.forgot_password(request)
 
 
 @router.post(
     "/verify-code",
-    summary="Verify password reset code",
-    description="Verify the password reset code sent to email.",
+    summary="Верификация кода для востановления пароля",
+    description="Верификация кода для востонавления пароля отправлен на email.",
     responses={
-        200: {"description": "Code verified successfully"},
-        400: {"model": ErrorResponse, "description": "Invalid or expired code"},
+        200: {"description": "Код успешно прошел верификацию"},
+        400: {"model": ErrorResponse, "description": "Ошибка"},
     },
 )
 async def verify_code(
     request: VerifyCodeRequest,
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    Verify the password reset code.
-    """
     auth_service = AuthService(session)
     return await auth_service.verify_code(request)
 
 
 @router.post(
     "/reset-password",
-    summary="Reset password",
-    description="Reset password after code verification.",
+    summary="Сброс пароля",
+    description="Сброс пароля после код верификации",
     responses={
-        200: {"description": "Password reset successfully"},
-        400: {"model": ErrorResponse, "description": "Validation error"},
-        404: {"model": ErrorResponse, "description": "User not found"},
+        200: {"description": "Пароль сброшен"},
+        400: {"model": ErrorResponse, "description": "Ошибка валидации"},
+        404: {"model": ErrorResponse, "description": "Пользователь не найден"},
     },
 )
 async def reset_password(
     request: ResetPasswordRequest,
     session: AsyncSession = Depends(get_db),
 ):
-    """
-    Reset password with new password.
-    
-    Should be called after verify-code endpoint returns success.
-    """
     auth_service = AuthService(session)
     return await auth_service.reset_password(request)

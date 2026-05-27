@@ -1,4 +1,4 @@
-"""SQLAlchemy models for the application."""
+"""SQLAlchemy модели"""
 
 from datetime import datetime, timezone
 from typing import Optional, List, TYPE_CHECKING
@@ -30,21 +30,15 @@ if TYPE_CHECKING:
     from .project import Project
     from .category import Category
 
-
-# Email validation regex from TZ
 EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9\-_.]+@[A-Za-z0-9\-_.]+\.[A-Za-z]{2,}$")
-# Password validation regex from TZ
 PASSWORD_PATTERN = re.compile(r"^[A-Za-z0-9!#$%&*+.<=>?@^_-]{8,16}$")
-# Name validation regex from TZ (Cyrillic + Latin + hyphen + space)
 NAME_PATTERN = re.compile(r"^[А-Яа-яA-Za-z\- ]{1,50}$")
 
 
 class User(Base):
-    """User model for authentication and profile management."""
-    
+        
     __tablename__ = "users"
     
-    # Columns
     email: Mapped[str] = mapped_column(
         String(255),
         unique=True,
@@ -83,9 +77,7 @@ class User(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
-    )
-    
-    # Relationships
+    )    
     created_tasks: Mapped[List["Task"]] = relationship(
         "Task",
         foreign_keys="Task.created_by_id",
@@ -104,32 +96,26 @@ class User(Base):
     
     @validates("email")
     def validate_email(self, key: str, value: str) -> str:
-        """Validate email format."""
         if not EMAIL_PATTERN.match(value):
-            raise ValueError("Invalid email format")
+            raise ValueError("Неверный формат почты")
         return value.lower()
     
     @validates("name")
     def validate_name(self, key: str, value: Optional[str]) -> Optional[str]:
-        """Validate name format."""
         if value is not None and not NAME_PATTERN.match(value):
-            raise ValueError("Invalid name format. Allowed: Cyrillic, Latin letters and hyphen, 1-50 chars.")
+            raise ValueError("Недопустимый формат имени")
         return value
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
 
-
-# Composite indexes for filtering
 Index("ix_users_email_is_active", "users", "email", "is_active")
 
 
 class RefreshToken(Base):
-    """Model for tracking refresh tokens (for logout/invalidation)."""
-    
+        
     __tablename__ = "refresh_tokens"
     
-    # Columns
     token_hash: Mapped[str] = mapped_column(
         String(255),
         unique=True,
@@ -156,7 +142,6 @@ class RefreshToken(Base):
         nullable=False,
     )
     
-    # Relationships
     user: Mapped["User"] = relationship(
         "User",
         backref="refresh_tokens",
@@ -167,11 +152,9 @@ class RefreshToken(Base):
 
 
 class PasswordResetCode(Base):
-    """Model for password reset codes."""
     
     __tablename__ = "password_reset_codes"
     
-    # Columns
     email: Mapped[str] = mapped_column(
         String(255),
         nullable=False,

@@ -1,4 +1,4 @@
-"""Project router."""
+"""Ручки проекта"""
 
 from typing import List
 
@@ -22,18 +22,17 @@ router = APIRouter(prefix="/api/v1/projects", tags=["Projects"])
 @router.get(
     "",
     response_model=List[ProjectResponse],
-    summary="Get all projects",
-    description="Get list of all projects owned by current user.",
+    summary="Получить все проекты",
+    description="Получить список всех проектов, принадлежащих текущему пользователю.",
     responses={
-        200: {"description": "Projects retrieved successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Проекты успешно получены."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def get_projects(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all user projects."""
     service = ProjectService(session)
     projects = await service.get_projects(current_user)
     return projects
@@ -42,13 +41,13 @@ async def get_projects(
 @router.put(
     "/{project_id}",
     response_model=ProjectResponse,
-    summary="Update project",
-    description="Update project name and/or icon.",
+    summary="Обновить проект",
+    description="Обновите название проекта и/или значок.",
     responses={
-        200: {"description": "Project updated successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
-        403: {"model": ErrorResponse, "description": "Access denied"},
-        404: {"model": ErrorResponse, "description": "Project not found"},
+        200: {"description": "Проект успешно обновлен."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
+        403: {"model": ErrorResponse, "description": "Доступ запрещен"},
+        404: {"model": ErrorResponse, "description": "Проект не найден"},
     },
 )
 async def update_project(
@@ -57,7 +56,6 @@ async def update_project(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Update project."""
     service = ProjectService(session)
     project = await service.update_project(project_id, current_user, request)
     return project
@@ -65,13 +63,13 @@ async def update_project(
 
 @router.delete(
     "/{project_id}",
-    summary="Delete project",
-    description="Delete a project and all its tasks.",
+    summary="Удалить проект",
+    description="Удалите проект и все его задачи.",
     responses={
-        200: {"description": "Project deleted successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
-        403: {"model": ErrorResponse, "description": "Access denied"},
-        404: {"model": ErrorResponse, "description": "Project not found"},
+        200: {"description": "Проект успешно удалён."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
+        403: {"model": ErrorResponse, "description": "Доступ запрещен"},
+        404: {"model": ErrorResponse, "description": "Проект не найден"},
     },
 )
 async def delete_project(
@@ -79,6 +77,5 @@ async def delete_project(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Delete project."""
     service = ProjectService(session)
     return await service.delete_project(project_id, current_user)

@@ -1,4 +1,4 @@
-"""Profile router."""
+"""Ручки профиля"""
 
 from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File
@@ -22,18 +22,17 @@ router = APIRouter(prefix="/api/v1/profile", tags=["Profile"])
 @router.get(
     "",
     response_model=ProfileResponse,
-    summary="Get user profile",
-    description="Get current user's profile information.",
+    summary="Получить профиль пользователя",
+    description="Получить информацию из профиля текущего пользователя.",
     responses={
-        200: {"description": "Profile retrieved successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Профиль успешно получен."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def get_profile(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get current user profile."""
     service = ProfileService(session)
     profile = await service.get_profile(current_user)
     return profile
@@ -42,12 +41,12 @@ async def get_profile(
 @router.put(
     "",
     response_model=ProfileResponse,
-    summary="Update profile",
-    description="Update current user's profile information.",
+    summary="Обновить профиль",
+    description="Обновите информацию в профиле текущего пользователя.",
     responses={
-        200: {"description": "Profile updated successfully"},
-        400: {"model": ErrorResponse, "description": "Validation error"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Профиль успешно обновлен."},
+        400: {"model": ErrorResponse, "description": "Ошибка проверки"},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def update_profile(
@@ -55,7 +54,6 @@ async def update_profile(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Update user profile."""
     service = ProfileService(session)
     profile = await service.update_profile(current_user, request)
     return profile
@@ -63,12 +61,12 @@ async def update_profile(
 
 @router.post(
     "/change-password",
-    summary="Change password",
-    description="Change current user's password.",
+    summary="Изменить пароль",
+    description="Изменить пароль текущего пользователя.",
     responses={
-        200: {"description": "Password changed successfully"},
-        400: {"model": ErrorResponse, "description": "Validation error"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Пароль успешно изменен."},
+        400: {"model": ErrorResponse, "description": "Ошибка проверки"},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def change_password(
@@ -76,24 +74,22 @@ async def change_password(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Change user password."""
     service = ProfileService(session)
     return await service.change_password(current_user, request)
 
 
 @router.post(
     "/logout",
-    summary="Logout from profile",
-    description="Logout current user (alternative logout endpoint).",
+    summary="Выйти из профиля",
+    description="Выйти из системы текущего пользователя.",
     responses={
-        200: {"description": "Successfully logged out"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Выход из системы пройден успешно."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def logout(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Logout user."""
     service = ProfileService(session)
     return await service.logout(current_user)

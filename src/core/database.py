@@ -1,4 +1,4 @@
-"""Database configuration and session management."""
+"""Конфигурация ДБ и сессион менеджер"""
 
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -8,11 +8,8 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import MetaData
-
 from src.config import settings
 
-
-# Naming convention for constraints (Alembic compatibility)
 metadata = MetaData(
     naming_convention={
         "ix": "ix_%(column_0_label)s",
@@ -23,16 +20,10 @@ metadata = MetaData(
     }
 )
 
-
 class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy models."""
-    
     metadata = metadata
-    
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-
-# Async engine for PostgreSQL
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
@@ -41,8 +32,6 @@ engine: AsyncEngine = create_async_engine(
     max_overflow=20,
 )
 
-
-# Async session factory
 async_session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -53,12 +42,6 @@ async_session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 
 async def get_db() -> AsyncSession:
-    """
-    Dependency to get database session.
-    
-    Yields:
-        AsyncSession: Database session instance.
-    """
     async with async_session_maker() as session:
         try:
             yield session
@@ -71,11 +54,9 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db() -> None:
-    """Initialize database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
 async def close_db() -> None:
-    """Close database connections."""
     await engine.dispose()

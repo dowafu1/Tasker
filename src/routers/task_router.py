@@ -1,4 +1,4 @@
-"""Task router."""
+"""Ручки задач"""
 
 from typing import Optional, List
 from datetime import date
@@ -27,22 +27,21 @@ router = APIRouter(prefix="/api/v1", tags=["Tasks"])
 @router.get(
     "/tasks/assigned",
     response_model=AssignedTasksResponse,
-    summary="Get assigned tasks",
-    description="Get list of tasks assigned to current user with counters and pagination.",
+    summary="Получайте назначенные задания",
+    description="Получите список задач, назначенных текущему пользователю.",
     responses={
-        200: {"description": "Tasks retrieved successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Задачи успешно получены"},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def get_assigned_tasks(
-    status: Optional[TaskStatus] = Query(None, description="Filter by status"),
-    importance: Optional[ImportanceLevel] = Query(None, description="Filter by importance"),
+    status: Optional[TaskStatus] = Query(None, description="Фильтр по статусу"),
+    importance: Optional[ImportanceLevel] = Query(None, description="Фильтр по важности"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    page_size: int = Query(20, ge=1, le=100, description="Количество элементов на странице"),
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get assigned tasks with filters and pagination."""
     service = TaskService(session)
     result = await service.get_assigned_tasks(
         current_user,
@@ -57,13 +56,13 @@ async def get_assigned_tasks(
 @router.get(
     "/tasks/{task_id}",
     response_model=TaskResponse,
-    summary="Get task details",
-    description="Get full task card. Conditional logic: if task is assigned (not created by user), project_name and category_marker are omitted.",
+    summary="Получить подробную информацию о задании",
+    description="Получить полную карточку задачи",
     responses={
-        200: {"description": "Task retrieved successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
-        403: {"model": ErrorResponse, "description": "Access denied"},
-        404: {"model": ErrorResponse, "description": "Task not found"},
+        200: {"description": "Задача успешно получена."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
+        403: {"model": ErrorResponse, "description": "Доступ запрещен"},
+        404: {"model": ErrorResponse, "description": "Задача не найдена"},
     },
 )
 async def get_task(
@@ -71,7 +70,6 @@ async def get_task(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get task details with conditional field display."""
     service = TaskService(session)
     task = await service.get_task(task_id, current_user)
     return task
@@ -79,13 +77,13 @@ async def get_task(
 
 @router.patch(
     "/tasks/{task_id}/complete",
-    summary="Complete task",
-    description="Mark a task as completed. Only assignee can complete the task.",
+    summary="Выполните задачу",
+    description="Отметьте задачу как выполненную. Выполнить задачу может только назначенный исполнитель.",
     responses={
-        200: {"description": "Task marked as completed"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
-        403: {"model": ErrorResponse, "description": "Only assignee can complete"},
-        404: {"model": ErrorResponse, "description": "Task not found"},
+        200: {"description": "Задача отмечена как выполненная"},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
+        403: {"model": ErrorResponse, "description": "Только исполнитель может завершить"},
+        404: {"model": ErrorResponse, "description": "Задача не найдена"},
     },
 )
 async def complete_task(
@@ -93,41 +91,37 @@ async def complete_task(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Mark task as completed."""
     service = TaskService(session)
     return await service.complete_task(task_id, current_user)
 
 
 @router.post(
     "/tasks/filters/reset",
-    summary="Reset task filters",
-    description="Reset all applied task filters.",
+    summary="Сбросить фильтры задач",
+    description="Сбросить все примененные фильтры задач.",
     responses={
-        200: {"description": "Filters reset successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Фильтры успешно сброшены."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def reset_filters(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Reset task filters."""
     service = TaskService(session)
     return await service.reset_filters(current_user)
 
 
-# ============================================================================
 # CALENDAR ENDPOINTS
-# ============================================================================
 
 @router.get(
     "/calendar/{year}/{month}",
     response_model=CalendarMonthResponse,
-    summary="Get calendar month",
-    description="Get calendar view for a specific month with date marks showing task counts.",
+    summary="Получить календарный месяц",
+    description="Получите календарный вид для конкретного месяца с отметками дат, отображающими количество задач..",
     responses={
-        200: {"description": "Calendar data retrieved successfully"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Календарные данные успешно получены."},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def get_calendar_month(
@@ -136,7 +130,6 @@ async def get_calendar_month(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get calendar month with task date marks."""
     service = CalendarService(session)
     return await service.get_calendar_month(current_user, year, month)
 
@@ -144,22 +137,21 @@ async def get_calendar_month(
 @router.get(
     "/calendar/{date}/tasks",
     response_model=CalendarDayTasksResponse,
-    summary="Get calendar day tasks",
-    description="Get tasks for a specific date with optional filters.",
+    summary="Получить задачи на календарный день",
+    description="Получайте задачи на определенную дату с возможностью добавления фильтров.",
     responses={
-        200: {"description": "Tasks retrieved successfully"},
-        400: {"model": ErrorResponse, "description": "Invalid date format"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        200: {"description": "Задачи успешно получены"},
+        400: {"model": ErrorResponse, "description": "Неверный формат даты"},
+        401: {"model": ErrorResponse, "description": "Не подтверждено"},
     },
 )
 async def get_calendar_day_tasks(
     date: str,
-    importance: Optional[ImportanceLevel] = Query(None, description="Filter by importance"),
-    status: Optional[TaskStatus] = Query(None, description="Filter by status"),
+    importance: Optional[ImportanceLevel] = Query(None, description="Фильтр по важности"),
+    status: Optional[TaskStatus] = Query(None, description="Фильтр по статусу"),
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get tasks for a specific calendar day."""
     service = CalendarService(session)
     return await service.get_calendar_day_tasks(
         current_user,
@@ -172,13 +164,13 @@ async def get_calendar_day_tasks(
 @router.post(
     "/calendar/tasks",
     response_model=TaskResponse,
-    summary="Create task via calendar",
-    description="Create a new task from calendar view.",
+    summary="Создать задачу через календарь",
+    description="Создайте новую задачу из календаря.",
     responses={
-        200: {"description": "Task created successfully"},
-        400: {"model": ErrorResponse, "description": "Validation error"},
-        401: {"model": ErrorResponse, "description": "Not authenticated"},
-        404: {"model": ErrorResponse, "description": "Category/Project/Assignee not found"},
+        200: {"description": "Задача успешно создана"},
+        400: {"model": ErrorResponse, "description": "Ошибка валидации"},
+        401: {"model": ErrorResponse, "description": "Не авторизован"},
+        404: {"model": ErrorResponse, "description": "Категория/Проект/Исполнитель не найден"},
     },
 )
 async def create_calendar_task(
@@ -186,7 +178,6 @@ async def create_calendar_task(
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create a new task via calendar."""
     service = TaskService(session)
     task = await service.create_calendar_task(current_user, request)
     return task

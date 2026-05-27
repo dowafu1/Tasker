@@ -1,5 +1,3 @@
-"""Main FastAPI application entry point."""
-
 import logging
 from contextlib import asynccontextmanager
 
@@ -15,7 +13,6 @@ from src.routers.project_router import router as project_router
 from src.routers.task_router import router as task_router
 
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO if settings.DEBUG else logging.WARNING,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -25,57 +22,54 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager for startup and shutdown events."""
-    # Startup
-    logger.info("Starting up Task Manager API...")
+    logger.info("Запуск Task Manager API...")
     await init_db()
-    logger.info("Database initialized")
+    logger.info("БД инициализована")
     
     yield
     
-    # Shutdown
-    logger.info("Shutting down Task Manager API...")
+    logger.info("Останавливается Task Manager API...")
     await close_db()
-    logger.info("Database connections closed")
+    logger.info("Подключение к БД закрыто")
 
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="""
-## Task Manager API
+## API менеджера задач
 
-A comprehensive task management backend with:
+Комплексная панель управления задачами, включающая:
 
-### Authentication & Authorization
-- User registration and login with JWT tokens
-- Password recovery via email codes
-- Token refresh rotation
+### Аутентификация и авторизация
+- Регистрация и вход пользователей с помощью JWT-токенов
+- Восстановление пароля с помощью кодов электронной почты
+- Обновление токенов
 
-### Profile Management
-- View and update user profile
-- Change password
-- Avatar upload support
+### Управление профилем
+- Просмотр и обновление профиля пользователя
+- Смена пароля
+- Поддержка загрузки аватара
 
-### Projects
-- Create, update, delete projects
-- Project ownership and access control
+### Проекты
+- Создание, обновление и удаление проектов
+- Владение проектом и контроль доступа
 
-### Tasks
-- Assigned tasks with filtering and pagination
-- Task completion tracking
-- Calendar integration
+### Задачи
+- Назначенные задачи с фильтрацией и пагинацией
+- Отслеживание выполнения задач
+- Интеграция с календарем
 
-### Calendar
-- Monthly calendar view with task markers
-- Daily task views with filters
-- Create tasks from calendar
+### Календарь
+- Ежемесячный календарь с маркерами задач
+- Ежедневный просмотр задач с фильтрами
+- Создание задач из календаря
 
-**Important Importance Markers:**
-- 🔴 Critical (очень срочно)
-- 🟠 High (срочно)
-- 🟡 Medium (может подождать)
-- 🟢 Low (несрочно)
+**Важность:**
+- Критический (очень срочно)
+- Высокий (срочно)
+- Средний (может учитывать)
+- Низкий (несрочно)
     """,
     lifespan=lifespan,
     docs_url="/docs",
@@ -84,32 +78,28 @@ A comprehensive task management backend with:
 )
 
 
-# CORS middleware (configure origins in production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure specific origins in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# Global exception handler for consistent error format
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handle uncaught exceptions with consistent error format."""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "detail": "Internal server error",
+            "detail": "Ошибка срвера",
             "code": "INTERNAL_ERROR",
         },
     )
 
 
-# Include routers
 app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(project_router)
@@ -118,7 +108,6 @@ app.include_router(task_router)
 
 @app.get("/", tags=["Health"])
 async def root():
-    """Root endpoint - health check."""
     return {
         "status": "ok",
         "service": settings.APP_NAME,
@@ -128,5 +117,4 @@ async def root():
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
+    return {"status": "Здоровый"}

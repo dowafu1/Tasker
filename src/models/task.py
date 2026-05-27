@@ -1,4 +1,4 @@
-"""Task and Category models."""
+"""Модели для тасков и категорий"""
 
 from datetime import datetime, timezone
 from typing import Optional, List, TYPE_CHECKING
@@ -24,16 +24,14 @@ if TYPE_CHECKING:
 
 
 class ImportanceLevel(str, PyEnum):
-    """Importance level enumeration for tasks."""
     
-    CRITICAL = "critical"  # 🔴 очень срочно
-    HIGH = "high"  # 🟠 срочно
-    MEDIUM = "medium"  # 🟡 может подождать
-    LOW = "low"  # 🟢 несрочно
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
     
     @property
     def emoji(self) -> str:
-        """Get emoji marker for importance level."""
         mapping = {
             "critical": "🔴",
             "high": "🟠",
@@ -44,7 +42,6 @@ class ImportanceLevel(str, PyEnum):
 
 
 class TaskStatus(str, PyEnum):
-    """Task status enumeration."""
     
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
@@ -53,17 +50,15 @@ class TaskStatus(str, PyEnum):
 
 
 class Category(Base):
-    """Category model for task categorization."""
     
     __tablename__ = "categories"
     
-    # Columns
     name: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
     )
     color: Mapped[str] = mapped_column(
-        String(7),  # Hex color code like #FF5733
+        String(7),
         nullable=False,
         default="#808080",
     )
@@ -77,8 +72,6 @@ class Category(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    
-    # Relationships
     tasks: Mapped[List["Task"]] = relationship(
         "Task",
         back_populates="category",
@@ -93,11 +86,9 @@ class Category(Base):
 
 
 class Task(Base):
-    """Task model for task management."""
     
     __tablename__ = "tasks"
     
-    # Columns
     name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
@@ -123,9 +114,7 @@ class Task(Base):
     completed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
-    )
-    
-    # Foreign keys
+    )    
     category_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("categories.id", ondelete="SET NULL"),
         nullable=True,
@@ -158,8 +147,6 @@ class Task(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    
-    # Relationships
     category: Mapped[Optional["Category"]] = relationship(
         "Category",
         back_populates="tasks",
@@ -181,13 +168,11 @@ class Task(Base):
     
     @validates("name")
     def validate_name(self, key: str, value: str) -> str:
-        """Validate task name."""
         if not value or len(value.strip()) == 0:
             raise ValueError("Task name cannot be empty")
         return value.strip()
     
     def mark_completed(self) -> None:
-        """Mark task as completed."""
         self.status = TaskStatus.COMPLETED
         self.completed_at = datetime.now(timezone.utc)
     

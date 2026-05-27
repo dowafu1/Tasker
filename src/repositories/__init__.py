@@ -1,4 +1,4 @@
-"""Repository layer for database operations."""
+"""Уровень репозитория для операций с БД"""
 
 from typing import Optional, List, Generic, TypeVar, Type
 from datetime import datetime, timezone
@@ -17,54 +17,46 @@ ModelT = TypeVar("ModelT", bound=type)
 
 
 class BaseRepository(Generic[ModelT]):
-    """Base repository with common CRUD operations."""
-    
+        
     def __init__(self, session: AsyncSession, model: Type[ModelT]):
         self.session = session
         self.model = model
     
     async def get_by_id(self, id: int) -> Optional[ModelT]:
-        """Get entity by ID."""
         result = await self.session.execute(
             select(self.model).where(self.model.id == id)
         )
         return result.scalar_one_or_none()
     
     async def get_all(self, limit: int = 100, offset: int = 0) -> List[ModelT]:
-        """Get all entities with pagination."""
         result = await self.session.execute(
             select(self.model).limit(limit).offset(offset)
         )
         return list(result.scalars().all())
     
     async def create(self, **kwargs) -> ModelT:
-        """Create a new entity."""
         entity = self.model(**kwargs)
         self.session.add(entity)
         await self.session.flush()
         return entity
     
     async def update(self, entity: ModelT, **kwargs) -> ModelT:
-        """Update an entity."""
         for key, value in kwargs.items():
             setattr(entity, key, value)
         await self.session.flush()
         return entity
     
     async def delete(self, entity: ModelT) -> None:
-        """Delete an entity."""
         await self.session.delete(entity)
         await self.session.flush()
 
 
 class UserRepository(BaseRepository[User]):
-    """Repository for User operations."""
-    
+        
     def __init__(self, session: AsyncSession):
         super().__init__(session, User)
     
     async def get_by_email(self, email: str) -> Optional[User]:
-        """Get user by email."""
         result = await self.session.execute(
             select(User).where(User.email == email.lower())
         )
@@ -76,7 +68,6 @@ class UserRepository(BaseRepository[User]):
         password: str,
         name: Optional[str] = None,
     ) -> User:
-        """Create a new user with hashed password."""
         password_hash = get_password_hash(password)
         user = User(
             email=email.lower(),
@@ -88,26 +79,22 @@ class UserRepository(BaseRepository[User]):
         return user
     
     async def is_email_taken(self, email: str) -> bool:
-        """Check if email is already registered."""
         existing = await self.get_by_email(email)
         return existing is not None
 
 
 class RefreshTokenRepository(BaseRepository[RefreshToken]):
-    """Repository for refresh token operations."""
     
     def __init__(self, session: AsyncSession):
         super().__init__(session, RefreshToken)
     
     async def get_by_token_hash(self, token_hash: str) -> Optional[RefreshToken]:
-        """Get refresh token by hash."""
         result = await self.session.execute(
             select(RefreshToken).where(RefreshToken.token_hash == token_hash)
         )
         return result.scalar_one_or_none()
     
     async def revoke_token(self, token_hash: str) -> bool:
-        """Revoke a refresh token."""
         token = await self.get_by_token_hash(token_hash)
         if token:
             token.is_revoked = True
@@ -116,7 +103,6 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
         return False
     
     async def revoke_all_user_tokens(self, user_id: int) -> int:
-        """Revoke all refresh tokens for a user."""
         result = await self.session.execute(
             select(RefreshToken).where(
                 and_(
@@ -132,7 +118,6 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
         return len(tokens)
     
     async def cleanup_expired_tokens(self) -> int:
-        """Remove expired tokens from database."""
         now = datetime.now(timezone.utc)
         result = await self.session.execute(
             select(RefreshToken).where(
@@ -150,13 +135,11 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
 
 
 class PasswordResetCodeRepository(BaseRepository[PasswordResetCode]):
-    """Repository for password reset code operations."""
     
     def __init__(self, session: AsyncSession):
         super().__init__(session, PasswordResetCode)
     
     async def get_valid_code(self, email: str, code: str) -> Optional[PasswordResetCode]:
-        """Get valid (non-expired, non-used) reset code."""
         now = datetime.now(timezone.utc)
         result = await self.session.execute(
             select(PasswordResetCode).where(
@@ -176,8 +159,6 @@ class PasswordResetCodeRepository(BaseRepository[PasswordResetCode]):
         code: str,
         expires_at: datetime,
     ) -> PasswordResetCode:
-        """Create a new password reset code."""
-        # Invalidate any existing codes for this email
         await self.session.execute(
             __import__('sqlalchemy').update(PasswordResetCode)
             .where(PasswordResetCode.email == email.lower())
@@ -194,19 +175,16 @@ class PasswordResetCodeRepository(BaseRepository[PasswordResetCode]):
         return reset_code
     
     async def mark_code_used(self, code_entity: PasswordResetCode) -> None:
-        """Mark a reset code as used."""
         code_entity.is_used = True
         await self.session.flush()
 
 
 class ProjectRepository(BaseRepository[Project]):
-    """Repository for Project operations."""
     
     def __init__(self, session: AsyncSession):
         super().__init__(session, Project)
     
     async def get_user_projects(self, user_id: int) -> List[Project]:
-        """Get all projects owned by a user."""
         result = await self.session.execute(
             select(Project)
             .where(Project.owner_id == user_id)
@@ -215,7 +193,6 @@ class ProjectRepository(BaseRepository[Project]):
         return list(result.scalars().all())
     
     async def get_project_with_tasks(self, project_id: int) -> Optional[Project]:
-        """Get project with its tasks loaded."""
         result = await self.session.execute(
             select(Project)
             .options(selectinload(Project.tasks))
@@ -225,13 +202,11 @@ class ProjectRepository(BaseRepository[Project]):
 
 
 class CategoryRepository(BaseRepository[Category]):
-    """Repository for Category operations."""
     
     def __init__(self, session: AsyncSession):
         super().__init__(session, Category)
     
     async def get_user_categories(self, user_id: int) -> List[Category]:
-        """Get all categories for a user."""
         result = await self.session.execute(
             select(Category)
             .where(Category.user_id == user_id)
@@ -240,7 +215,6 @@ class CategoryRepository(BaseRepository[Category]):
         return list(result.scalars().all())
     
     async def get_by_id_and_user(self, category_id: int, user_id: int) -> Optional[Category]:
-        """Get category by ID ensuring it belongs to the user."""
         result = await self.session.execute(
             select(Category).where(
                 and_(
@@ -253,7 +227,6 @@ class CategoryRepository(BaseRepository[Category]):
 
 
 class TaskRepository(BaseRepository[Task]):
-    """Repository for Task operations."""
     
     def __init__(self, session: AsyncSession):
         super().__init__(session, Task)
@@ -266,13 +239,7 @@ class TaskRepository(BaseRepository[Task]):
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[List[Task], int]:
-        """
-        Get tasks assigned to a user with filters and pagination.
         
-        Returns:
-            Tuple of (tasks list, total count)
-        """
-        # Build base query
         conditions = [Task.assignee_id == user_id]
         
         if status_filter:
@@ -280,12 +247,10 @@ class TaskRepository(BaseRepository[Task]):
         if importance_filter:
             conditions.append(Task.importance == importance_filter)
         
-        # Get total count
         count_query = select(func.count()).select_from(Task).where(and_(*conditions))
         count_result = await self.session.execute(count_query)
         total = count_result.scalar() or 0
         
-        # Get tasks with relationships
         query = (
             select(Task)
             .options(
@@ -306,7 +271,6 @@ class TaskRepository(BaseRepository[Task]):
         return tasks, total
     
     async def get_task_with_relations(self, task_id: int) -> Optional[Task]:
-        """Get task with all relationships loaded."""
         result = await self.session.execute(
             select(Task)
             .options(
@@ -325,11 +289,9 @@ class TaskRepository(BaseRepository[Task]):
         year: int,
         month: int,
     ) -> List[Task]:
-        """Get tasks with deadlines in a specific month for calendar view."""
         from datetime import date
         import calendar
         
-        # Get first and last day of month
         first_day = date(year, month, 1)
         last_day = date(year, month, calendar.monthrange(year, month)[1])
         
@@ -353,7 +315,6 @@ class TaskRepository(BaseRepository[Task]):
         importance_filter: Optional[ImportanceLevel] = None,
         status_filter: Optional[TaskStatus] = None,
     ) -> List[Task]:
-        """Get tasks for a specific day."""
         from datetime import date
         
         conditions = [
@@ -374,7 +335,6 @@ class TaskRepository(BaseRepository[Task]):
         return list(result.scalars().all())
     
     async def get_created_task_with_relations(self, task_id: int, user_id: int) -> Optional[Task]:
-        """Get task created by user with all relationships loaded."""
         result = await self.session.execute(
             select(Task)
             .options(
@@ -397,7 +357,6 @@ class TaskRepository(BaseRepository[Task]):
         user_id: int,
         status_filter: Optional[TaskStatus] = None,
     ) -> int:
-        """Count tasks assigned to user."""
         conditions = [Task.assignee_id == user_id]
         if status_filter:
             conditions.append(Task.status == status_filter)
