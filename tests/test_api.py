@@ -1,5 +1,3 @@
-"""Integration tests for API endpoints."""
-
 import pytest
 from datetime import datetime, timedelta, timezone
 
@@ -7,11 +5,9 @@ from src.models.task import TaskStatus, ImportanceLevel
 
 
 class TestAuthEndpoints:
-    """Tests for authentication endpoints."""
     
     @pytest.mark.asyncio
     async def test_register_success(self, client):
-        """Test successful user registration."""
         response = await client.post(
             "/api/v1/auth/register",
             json={
@@ -29,7 +25,6 @@ class TestAuthEndpoints:
     
     @pytest.mark.asyncio
     async def test_register_email_exists(self, client, test_user):
-        """Test registration with existing email."""
         response = await client.post(
             "/api/v1/auth/register",
             json={
@@ -44,12 +39,11 @@ class TestAuthEndpoints:
     
     @pytest.mark.asyncio
     async def test_register_invalid_password(self, client):
-        """Test registration with invalid password."""
         response = await client.post(
             "/api/v1/auth/register",
             json={
                 "email": "test@example.com",
-                "password": "short",  # Too short
+                "password": "short",
                 "password_confirm": "short",
                 "accept_terms": True,
             },
@@ -59,7 +53,6 @@ class TestAuthEndpoints:
     
     @pytest.mark.asyncio
     async def test_login_success(self, client, test_user):
-        """Test successful login."""
         response = await client.post(
             "/api/v1/auth/login",
             json={
@@ -74,7 +67,6 @@ class TestAuthEndpoints:
     
     @pytest.mark.asyncio
     async def test_login_invalid_credentials(self, client):
-        """Test login with invalid credentials."""
         response = await client.post(
             "/api/v1/auth/login",
             json={
@@ -87,14 +79,12 @@ class TestAuthEndpoints:
     
     @pytest.mark.asyncio
     async def test_logout(self, authenticated_client):
-        """Test logout endpoint."""
         response = await authenticated_client.post("/api/v1/auth/logout")
         
         assert response.status_code == 200
     
     @pytest.mark.asyncio
     async def test_forgot_password(self, client, test_user):
-        """Test forgot password endpoint."""
         response = await client.post(
             "/api/v1/auth/forgot-password",
             json={"email": test_user.email},
@@ -104,10 +94,7 @@ class TestAuthEndpoints:
     
     @pytest.mark.asyncio
     async def test_reset_password(self, client, test_user):
-        """Test password reset flow."""
-        # Create a reset code directly in DB
         from src.models.user import PasswordResetCode
-        from datetime import timedelta, timezone
         
         code = "123456"
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
@@ -118,17 +105,13 @@ class TestAuthEndpoints:
             expires_at=expires_at,
         )
         
-        # We need a session to add this - skip for now as it requires db fixture
-        # This would be tested in a full integration test setup
         pass
 
 
 class TestProfileEndpoints:
-    """Tests for profile endpoints."""
     
     @pytest.mark.asyncio
     async def test_get_profile(self, authenticated_client, test_user):
-        """Test getting current user profile."""
         response = await authenticated_client.get("/api/v1/profile")
         
         assert response.status_code == 200
@@ -138,7 +121,6 @@ class TestProfileEndpoints:
     
     @pytest.mark.asyncio
     async def test_update_profile_name(self, authenticated_client, test_user):
-        """Test updating profile name."""
         response = await authenticated_client.put(
             "/api/v1/profile",
             json={"name": "Updated Name"},
@@ -150,7 +132,6 @@ class TestProfileEndpoints:
     
     @pytest.mark.asyncio
     async def test_change_password(self, authenticated_client, test_user):
-        """Test changing password."""
         response = await authenticated_client.post(
             "/api/v1/profile/change-password",
             json={
@@ -164,18 +145,15 @@ class TestProfileEndpoints:
     
     @pytest.mark.asyncio
     async def test_unauthorized_access(self, client):
-        """Test accessing protected endpoint without auth."""
         response = await client.get("/api/v1/profile")
         
         assert response.status_code == 401
 
 
 class TestProjectEndpoints:
-    """Tests for project endpoints."""
     
     @pytest.mark.asyncio
     async def test_get_projects(self, authenticated_client, test_project):
-        """Test getting user projects."""
         response = await authenticated_client.get("/api/v1/projects")
         
         assert response.status_code == 200
@@ -185,7 +163,6 @@ class TestProjectEndpoints:
     
     @pytest.mark.asyncio
     async def test_update_project(self, authenticated_client, test_project):
-        """Test updating a project."""
         response = await authenticated_client.put(
             f"/api/v1/projects/{test_project.id}",
             json={"name": "Updated Project", "icon": "📂"},
@@ -198,7 +175,6 @@ class TestProjectEndpoints:
     
     @pytest.mark.asyncio
     async def test_delete_project(self, authenticated_client, test_project):
-        """Test deleting a project."""
         response = await authenticated_client.delete(
             f"/api/v1/projects/{test_project.id}",
         )
@@ -207,11 +183,9 @@ class TestProjectEndpoints:
 
 
 class TestTaskEndpoints:
-    """Tests for task endpoints."""
     
     @pytest.mark.asyncio
     async def test_get_assigned_tasks(self, authenticated_client, test_task):
-        """Test getting assigned tasks."""
         response = await authenticated_client.get("/api/v1/tasks/assigned")
         
         assert response.status_code == 200
@@ -221,7 +195,6 @@ class TestTaskEndpoints:
     
     @pytest.mark.asyncio
     async def test_get_task_details(self, authenticated_client, test_task):
-        """Test getting task details."""
         response = await authenticated_client.get(f"/api/v1/tasks/{test_task.id}")
         
         assert response.status_code == 200
@@ -231,7 +204,6 @@ class TestTaskEndpoints:
     
     @pytest.mark.asyncio
     async def test_complete_task(self, authenticated_client, test_task):
-        """Test completing a task."""
         response = await authenticated_client.patch(
             f"/api/v1/tasks/{test_task.id}/complete",
         )
@@ -240,22 +212,18 @@ class TestTaskEndpoints:
     
     @pytest.mark.asyncio
     async def test_get_assigned_task_conditional_fields(self, authenticated_client, assigned_task):
-        """Test that assigned tasks hide project_name and category_marker."""
         response = await authenticated_client.get(f"/api/v1/tasks/{assigned_task.id}")
         
         assert response.status_code == 200
         data = response.json()
-        # For assigned tasks (not created by user), these should be None
         assert data.get("project_name") is None
         assert data.get("category_marker") is None
 
 
 class TestCalendarEndpoints:
-    """Tests for calendar endpoints."""
     
     @pytest.mark.asyncio
     async def test_get_calendar_month(self, authenticated_client, test_task):
-        """Test getting calendar month view."""
         now = datetime.now(timezone.utc)
         response = await authenticated_client.get(
             f"/api/v1/calendar/{now.year}/{now.month}",
@@ -268,7 +236,6 @@ class TestCalendarEndpoints:
     
     @pytest.mark.asyncio
     async def test_get_calendar_day_tasks(self, authenticated_client, test_task):
-        """Test getting tasks for a specific day."""
         if test_task.deadline:
             date_str = test_task.deadline.strftime("%Y-%m-%d")
             response = await authenticated_client.get(
@@ -281,7 +248,6 @@ class TestCalendarEndpoints:
     
     @pytest.mark.asyncio
     async def test_create_calendar_task(self, authenticated_client, test_category, test_project):
-        """Test creating a task via calendar."""
         deadline = datetime.now(timezone.utc) + timedelta(days=7)
         
         response = await authenticated_client.post(
@@ -303,16 +269,14 @@ class TestCalendarEndpoints:
 
 
 class TestValidationEdgeCases:
-    """Tests for validation edge cases."""
     
     @pytest.mark.asyncio
     async def test_password_too_short(self, client):
-        """Test password validation - too short."""
         response = await client.post(
             "/api/v1/auth/register",
             json={
                 "email": "test@example.com",
-                "password": "abc12",  # 5 chars
+                "password": "abc12",
                 "password_confirm": "abc12",
                 "accept_terms": True,
             },
@@ -322,12 +286,11 @@ class TestValidationEdgeCases:
     
     @pytest.mark.asyncio
     async def test_password_too_long(self, client):
-        """Test password validation - too long."""
         response = await client.post(
             "/api/v1/auth/register",
             json={
                 "email": "test@example.com",
-                "password": "a" * 17,  # 17 chars
+                "password": "a" * 17,
                 "password_confirm": "a" * 17,
                 "accept_terms": True,
             },
@@ -337,7 +300,6 @@ class TestValidationEdgeCases:
     
     @pytest.mark.asyncio
     async def test_invalid_email_format(self, client):
-        """Test email validation."""
         response = await client.post(
             "/api/v1/auth/register",
             json={
@@ -352,7 +314,6 @@ class TestValidationEdgeCases:
     
     @pytest.mark.asyncio
     async def test_passwords_do_not_match(self, client):
-        """Test password confirmation."""
         response = await client.post(
             "/api/v1/auth/register",
             json={
@@ -367,10 +328,9 @@ class TestValidationEdgeCases:
     
     @pytest.mark.asyncio
     async def test_name_with_invalid_chars(self, authenticated_client):
-        """Test name validation with invalid characters."""
         response = await authenticated_client.put(
             "/api/v1/profile",
-            json={"name": "Name123!"},  # Numbers and special chars not allowed
+            json={"name": "Name123!"},
         )
         
         assert response.status_code == 422
